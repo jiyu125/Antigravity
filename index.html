@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>생존 확률 계산기</title>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; background-color: #1e1e2e; color: #cdd6f4; text-align: center; padding: 30px; margin: 0; }
+    h1 { color: #f38ba8; margin-bottom: 5px; }
+    p { color: #bac2de; margin-bottom: 25px; }
+    .container { background-color: #313244; padding: 30px; border-radius: 15px; display: inline-block; width: 100%; max-width: 450px; box-sizing: border-box; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    select, input, button { margin: 10px 0; padding: 12px; width: 100%; box-sizing: border-box; border-radius: 8px; border: none; font-size: 16px; background-color: #45475a; color: #cdd6f4; transition: 0.2s; outline: none; }
+    select:focus, input:focus { box-shadow: 0 0 0 2px #89b4fa; }
+    button { background-color: #89b4fa; color: #1e1e2e; cursor: pointer; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 10px rgba(137, 180, 250, 0.3); }
+    button:hover { background-color: #b4befe; transform: translateY(-2px); }
+    button:active { transform: translateY(0); }
+    .result { margin-top: 25px; padding: 25px; background-color: #181825; border-radius: 12px; display: none; box-shadow: inset 0 2px 10px rgba(0,0,0,0.2); }
+    .result h2 { margin-top: 0; font-size: 1.2em; color: #a6adc8; }
+    .percentage { font-size: 4em; font-weight: 900; color: #a6e3a1; text-shadow: 0 0 20px rgba(166, 227, 161, 0.4); margin: 10px 0; }
+    .comment { margin-top: 15px; font-style: italic; color: #fab387; font-size: 1.1em; line-height: 1.4; }
+    .fields { display: none; text-align: left; }
+    .fields.active { display: block; animation: fadeIn 0.3s ease; }
+    .field-label { font-size: 0.9em; color: #a6adc8; margin-bottom: -5px; display: block; margin-top: 10px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>💀 생존 확률 계산기</h1>
+    <p style="margin-bottom: 10px;">당신의 처참한 현실을 마주하세요</p>
+    <button onclick="copyAppLink()" style="background-color: #cba6f7; color: #1e1e2e; font-size: 0.85em; padding: 6px 12px; width: auto; margin-top: 0; margin-bottom: 25px; display: inline-block; box-shadow: 0 4px 10px rgba(203, 166, 247, 0.2);">🔗 앱 주소 공유하기</button>
+    
+    <div style="text-align: left;">
+      <span class="field-label">현재 상황 선택</span>
+      <select id="situation" onchange="changeSituation()">
+        <option value="exam">📖 시험 (벼락치기)</option>
+        <option value="assignment">📄 과제 (제출 임박)</option>
+        <option value="presentation">🎤 발표 (준비 안됨)</option>
+        <option value="late">🏃 지각 (침대에서 방금 깸)</option>
+      </select>
+    </div>
+
+    <div id="exam-fields" class="fields active">
+      <span class="field-label">시험까지 남은 시간 (시간)</span>
+      <input type="number" id="exam-time" placeholder="예: 5" min="0">
+      <span class="field-label">현재 공부 진도 (0-100%)</span>
+      <input type="number" id="exam-progress" placeholder="예: 20" min="0" max="100">
+    </div>
+
+    <div id="assignment-fields" class="fields">
+      <span class="field-label">마감까지 남은 시간 (시간)</span>
+      <input type="number" id="assign-time" placeholder="예: 2" min="0">
+      <span class="field-label">과제 완성도 (0-100%)</span>
+      <input type="number" id="assign-progress" placeholder="예: 50" min="0" max="100">
+    </div>
+
+    <div id="presentation-fields" class="fields">
+      <span class="field-label">PPT 완성도 (0-100%)</span>
+      <input type="number" id="ppt-progress" placeholder="예: 80" min="0" max="100">
+      <span class="field-label">대본 숙지도 (0-100%)</span>
+      <input type="number" id="script-progress" placeholder="예: 10" min="0" max="100">
+    </div>
+
+    <div id="late-fields" class="fields">
+      <span class="field-label">지각까지 남은 시간 (분)</span>
+      <input type="number" id="late-time" placeholder="예: 10" min="0">
+      <span class="field-label">목적지까지 걸리는 시간 (분)</span>
+      <input type="number" id="transport-time" placeholder="예: 30" min="0">
+    </div>
+
+    <button onclick="calculate()">생존 확률 분석하기 🚀</button>
+
+    <div class="result" id="result-box">
+      <h2>분석 결과</h2>
+      <div class="percentage" id="survival-rate">0%</div>
+      <div id="danger-level" style="font-weight: bold; font-size: 1.2em;">위험 등급: 매우 위험</div>
+      <div class="comment" id="comment">"재수강을 환영합니다."</div>
+      <button onclick="shareResult()" style="background-color: #f9e2af; color: #1e1e2e; margin-top: 20px; box-shadow: 0 4px 10px rgba(249, 226, 175, 0.3);">💾 결과 공유하기</button>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('shared')) {
+        const score = urlParams.get('score');
+        const level = urlParams.get('level');
+        const comment = urlParams.get('comment');
+        
+        // 입력 폼 숨기고 공유받은 결과 보여주기
+        document.querySelector('.container p').innerText = "📍 친구가 보내온 생존 확률 분석 결과";
+        document.getElementById('situation').style.display = 'none';
+        document.querySelectorAll('.field-label').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.fields').forEach(el => el.style.display = 'none');
+        document.querySelector('button[onclick="calculate()"]').style.display = 'none';
+        
+        showResult(score, level, comment);
+        
+        // 공유 버튼을 "나도 계산하기"로 변경
+        const shareBtn = document.querySelector('#result-box button');
+        shareBtn.innerText = "🔄 나도 생존 확률 계산하기";
+        shareBtn.onclick = function() {
+          window.location.href = window.location.origin + window.location.pathname;
+        };
+      }
+    };
+
+    function changeSituation() {
+      document.querySelectorAll('.fields').forEach(el => el.classList.remove('active'));
+      const sit = document.getElementById('situation').value;
+      if (sit === 'exam') document.getElementById('exam-fields').classList.add('active');
+      else if (sit === 'assignment') document.getElementById('assignment-fields').classList.add('active');
+      else if (sit === 'presentation') document.getElementById('presentation-fields').classList.add('active');
+      else if (sit === 'late') document.getElementById('late-fields').classList.add('active');
+      
+      document.getElementById('result-box').style.display = 'none';
+    }
+
+    // 공유용 글로벌 상태 변수
+    let lastSit = 'exam';
+    let lastScore = 0;
+    let lastLevel = '';
+    let lastComment = '';
+
+    function calculate() {
+      const sit = document.getElementById('situation').value;
+      let score = 0;
+      let comment = "";
+
+      if (sit === 'exam') {
+        const time = Number(document.getElementById('exam-time').value || 0);
+        const progress = Number(document.getElementById('exam-progress').value || 0);
+        score = progress + (time * 5); // 1시간당 5% 오름
+        if (score < 30) comment = "기적은 일어나지 않습니다. 다음 학기를 노리세요. 💀";
+        else if (score < 70) comment = "밤을 새면 C+은 가능할지도 모릅니다. ☕";
+        else comment = "이 정도면 충분합니다. 꿀잠 주무세요. 🛏️";
+      } else if (sit === 'assignment') {
+        const time = Number(document.getElementById('assign-time').value || 0);
+        const progress = Number(document.getElementById('assign-progress').value || 0);
+        score = progress + (time * 10);
+        if (score < 40) comment = "교수님, 제 노트북이 물에 빠졌습니다... 💻💦";
+        else if (score < 80) comment = "컨트롤+C, 컨트롤+V의 신이 강림할 시간. ⌨️";
+        else comment = "여유롭네요. 오타나 확인하세요. ✨";
+      } else if (sit === 'presentation') {
+        const ppt = Number(document.getElementById('ppt-progress').value || 0);
+        const script = Number(document.getElementById('script-progress').value || 0);
+        score = (ppt * 0.4) + (script * 0.6);
+        if (score < 30) comment = "무대 위에서 스탠드업 코미디를 하실 계획이군요. 🤡";
+        else if (score < 70) comment = "질의응답 시간만 어떻게든 넘겨봅시다. 땀 삐질.. 💦";
+        else comment = "스티브 잡스 빙의 완료. 무대를 찢어버리세요. 🍎";
+      } else if (sit === 'late') {
+        const time = Number(document.getElementById('late-time').value || 0);
+        const transport = Number(document.getElementById('transport-time').value || 0);
+        if (time >= transport && transport > 0) score = 100;
+        else if (transport === 0) score = 0;
+        else score = Math.max(0, 100 - ((transport - time) * 5));
+        
+        if (score === 100) comment = "안전 세이프! 커피 한 잔의 여유 가능. ☕";
+        else if (score > 50) comment = "우사인 볼트처럼 뛰면 기적이 일어날지도? 🏃💨";
+        else comment = "그냥 당당하게 걸어가세요. 어차피 늦었습니다. 🚶‍♂️";
+      }
+
+      score = Math.min(100, Math.max(0, score));
+      
+      let level = "안전 🟢";
+      if (score < 40) { level = "절망적 🔴"; }
+      else if (score < 70) { level = "위험 🟡"; }
+
+      lastSit = sit;
+      lastScore = Math.round(score);
+      lastLevel = level;
+      lastComment = comment;
+
+      showResult(lastScore, lastLevel, lastComment);
+    }
+
+    function showResult(score, level, comment) {
+      let rateColor = "#a6e3a1";
+      if (score < 40) { rateColor = "#f38ba8"; }
+      else if (score < 70) { rateColor = "#f9e2af"; }
+
+      document.getElementById('survival-rate').innerText = score + "%";
+      document.getElementById('survival-rate').style.color = rateColor;
+      document.getElementById('danger-level').innerText = "위험 등급: " + level;
+      document.getElementById('danger-level').style.color = rateColor;
+      document.getElementById('comment').innerText = `"${comment}"`;
+      document.getElementById('result-box').style.display = 'block';
+      
+      // 약간의 애니메이션 효과 트리거
+      document.getElementById('result-box').style.animation = 'none';
+      setTimeout(() => {
+        document.getElementById('result-box').style.animation = 'fadeIn 0.5s ease forwards';
+      }, 10);
+    }
+
+    function shareResult() {
+      // 쿼리 매개변수로 현재 결과 전송하는 링크 구성
+      const shareUrl = window.location.origin + window.location.pathname + 
+        `?shared=true&sit=${lastSit}&score=${lastScore}&level=${encodeURIComponent(lastLevel)}&comment=${encodeURIComponent(lastComment)}`;
+      
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert("공유 링크가 클립보드에 복사되었습니다! SNS나 단톡방에 붙여넣어 보세요. 🔗");
+      }).catch(err => {
+        // 복사 API 차단 시 Fallback 처리
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("공유 링크가 클립보드에 복사되었습니다! 🔗");
+      });
+    }
+
+    function copyAppLink() {
+      // 쿼리 매개변수 없는 순수한 앱 메인 URL 복사
+      const appUrl = window.location.origin + window.location.pathname;
+      
+      navigator.clipboard.writeText(appUrl).then(() => {
+        alert("앱 메인 주소가 클립보드에 복사되었습니다! 친구들에게 보내 생존 확률을 직접 계산해보게 하세요. 🔗");
+      }).catch(err => {
+        const textArea = document.createElement("textarea");
+        textArea.value = appUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        alert("앱 메인 주소가 클립보드에 복사되었습니다! 🔗");
+      });
+    }
+  </script>
+</body>
+</html>
