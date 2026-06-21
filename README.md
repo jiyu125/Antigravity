@@ -7,4 +7,4 @@
 위험 등급: 안전 🟢
 "우사인 볼트처럼 뛰면 기적이 일어날지도? 🏃💨"
 
-### [이곳을 클릭하여 앱을 실행해보세요](https://jiyu125.github.io/Antigravity/)
+### [이곳을 클릭하여 앱을 실행해보세요]([https://jiyu125.github.io/Antigravity/](https://username.github.io/survival-calculator/))
